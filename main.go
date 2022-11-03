@@ -17,11 +17,12 @@ func main() {
 	app.Version = "v1.0.0"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{Name: "message", Value: "hello world"},
-		cli.StringFlag{Name: "messageInterval", Value: "1s"},
-		cli.IntFlag{Name: "messageTimes", Value: 60},
+		cli.StringFlag{Name: "messageInterval", Value: "10s"},
+		cli.IntFlag{Name: "messageTimes", Value: 100},
 		cli.StringFlag{Name: "host", Value: "localhost:8080"},
 		cli.StringFlag{Name: "path", Value: "/ws"},
 		cli.IntFlag{Name: "user", Value: 500},
+		cli.StringFlag{Name: "connectInterval", Value: "50ms"},
 	}
 
 	app.Action = func(cli *cli.Context) {
@@ -31,8 +32,14 @@ func main() {
 		endpoint := cli.String("host")
 		path := cli.String("path")
 		userNum := cli.Int("user")
+		connectInterval := cli.String("connectInterval")
 
-		intv, err := time.ParseDuration(messageInterval)
+		messageIntv, err := time.ParseDuration(messageInterval)
+		if err != nil {
+			panic(err)
+		}
+
+		connectIntv, err := time.ParseDuration(connectInterval)
 		if err != nil {
 			panic(err)
 		}
@@ -42,8 +49,9 @@ func main() {
 			WebsocketBenchmarkerOptionMessage(message),
 			WebsocketBenchmarkerOptionMessageTimes(messageTimes),
 			WebsocketBenchmarkerOptionPath(path),
-			WebsocketBenchmarkerOptionMessageInterval(intv),
+			WebsocketBenchmarkerOptionMessageInterval(messageIntv),
 			WebsocketBenchmarkerOptionUserNum(userNum),
+			WebsocketBenchmarkerOptionConnectInterval(connectIntv),
 		)
 
 		c := make(chan os.Signal, 1)

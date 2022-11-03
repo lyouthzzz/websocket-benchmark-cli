@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -23,6 +24,10 @@ func WebsocketBenchmarkerOptionPath(path string) WebsocketBenchmarkerOption {
 
 func WebsocketBenchmarkerOptionMessage(message string) WebsocketBenchmarkerOption {
 	return func(b *WebsocketBenchmarker) { b.message = message }
+}
+
+func WebsocketBenchmarkerOptionConnectInterval(duration time.Duration) WebsocketBenchmarkerOption {
+	return func(b *WebsocketBenchmarker) { b.connectInterval = duration }
 }
 
 func WebsocketBenchmarkerOptionMessageInterval(duration time.Duration) WebsocketBenchmarkerOption {
@@ -49,6 +54,7 @@ type WebsocketBenchmarker struct {
 	message         string
 	messageFilePath string
 	messageInterval time.Duration
+	connectInterval time.Duration
 	messageTimes    int
 
 	dialer *websocket.Dialer
@@ -64,7 +70,8 @@ func NewWebsocketBenchmarker(opts ...WebsocketBenchmarkerOption) *WebsocketBench
 		path:            "/ws",
 		userNum:         500,
 		message:         "ping",
-		messageInterval: time.Second,
+		messageInterval: 30 * time.Second,
+		connectInterval: 10 * time.Millisecond,
 		dialer:          &websocket.Dialer{Proxy: http.ProxyFromEnvironment, HandshakeTimeout: 5 * time.Second},
 		conns:           make(map[int]*websocket.Conn),
 	}
@@ -104,13 +111,29 @@ func (b *WebsocketBenchmarker) Start() error {
 
 	messageContent := []byte(b.message)
 
-	log.Printf("websocket message: %s, message interval: %s \n", b.message, b.messageInterval.String())
+	log.Printf(b.info())
 
 	wg := &sync.WaitGroup{}
 	wg.Add(b.userNum)
 
+	signalChan := make(chan struct{}, b.userNum)
+
+	go func() {
+		ticker := time.NewTicker(b.connectInterval)
+		defer ticker.Stop()
+
+		for i := 0; i < b.userNum; i++ {
+			select {
+			case <-ticker.C:
+				signalChan <- struct{}{}
+			}
+		}
+	}()
+
 	for i := 0; i < b.userNum; i++ {
 		connId := i
+		<-signalChan
+		log.Println("add a conn ", connId+1)
 		go func() {
 			defer wg.Done()
 
@@ -144,6 +167,8 @@ func (b *WebsocketBenchmarker) Start() error {
 			}
 		}()
 	}
+
+	close(signalChan)
 
 	wg.Wait()
 
@@ -184,8 +209,13 @@ func (b *WebsocketBenchmarker) Stop() {
 	b.mutex.Lock()
 	for _, conn := range b.conns {
 		if err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "closed")); err != nil {
-			log.Println("conn close err: " + err.Error())
+			//log.Println("conn close err: " + err.Error())
 		}
 	}
 	b.mutex.Unlock()
+}
+
+func (b *WebsocketBenchmarker) info() string {
+	return fmt.Sprintf("\nendpoint: %s \npath: %s \nuser: %d \nmessage: %s \nmessageInterval: %s \nconnectInterval: %s \nmessageTimes: %d\n",
+		b.endpoint, b.path, b.userNum, b.message, b.messageInterval.String(), b.connectInterval.String(), b.messageTimes)
 }

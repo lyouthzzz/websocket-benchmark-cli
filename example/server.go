@@ -65,7 +65,7 @@ func call() {
 }
 
 func main() {
-	go server()
+	//go server()
 
 	call()
 }
