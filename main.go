@@ -43,7 +43,7 @@ func main() {
 			WebsocketBenchmarkerOptionMessageTimes(messageTimes),
 			WebsocketBenchmarkerOptionPath(path),
 			WebsocketBenchmarkerOptionMessageInterval(intv),
-			WebsocketBenchmarkerUserNum(userNum),
+			WebsocketBenchmarkerOptionUserNum(userNum),
 		)
 
 		c := make(chan os.Signal, 1)
@@ -64,12 +64,13 @@ func main() {
 		case s := <-c:
 			benchmarker.Stop()
 			time.Sleep(10 * time.Second)
-			log.Printf("process down by signal %s\n", s.String())
+			log.Printf("process stop by signal %s\n", s.String())
 		case err := <-errC:
+			benchmarker.Stop()
 			if err != nil {
-				log.Printf("process down by benchmark err: %s\n", err.Error())
+				log.Printf("process stop by benchmark err: %s\n", err.Error())
 			} else {
-				log.Println("process down")
+				log.Println("process complete")
 			}
 		}
 	}

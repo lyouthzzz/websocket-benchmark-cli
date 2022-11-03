@@ -37,7 +37,7 @@ func WebsocketBenchmarkerOptionMessageFilePath(messageFilePath string) Websocket
 	return func(b *WebsocketBenchmarker) { b.messageFilePath = messageFilePath }
 }
 
-func WebsocketBenchmarkerUserNum(userNum int) WebsocketBenchmarkerOption {
+func WebsocketBenchmarkerOptionUserNum(userNum int) WebsocketBenchmarkerOption {
 	return func(b *WebsocketBenchmarker) { b.userNum = userNum }
 }
 
@@ -116,7 +116,7 @@ func (b *WebsocketBenchmarker) Start() error {
 
 			conn, err := b.connect()
 			if err != nil {
-				log.Println("connect err: ", err)
+				log.Printf("conn: %d. connect err: %s\n", connId, err.Error())
 				return
 			}
 			b.addConn(connId, conn)
@@ -131,8 +131,6 @@ func (b *WebsocketBenchmarker) Start() error {
 				select {
 				case <-ticker.C:
 					if atomic.LoadInt64(&b.closed) == 1 {
-						b.closeConn(connId)
-						b.delConn(connId)
 						return
 					}
 					if err := conn.WriteMessage(websocket.TextMessage, messageContent); err != nil {
@@ -142,7 +140,6 @@ func (b *WebsocketBenchmarker) Start() error {
 					if curTimes >= times {
 						return
 					}
-					log.Printf("conn id: %d, cur time: %d times: %d \n", connId, curTimes, times)
 				}
 			}
 		}()
@@ -173,15 +170,23 @@ func (b *WebsocketBenchmarker) delConn(connId int) {
 
 func (b *WebsocketBenchmarker) addConn(connId int, conn *websocket.Conn) {
 	b.mutex.Lock()
+	defer b.mutex.Unlock()
+	if atomic.LoadInt64(&b.closed) == 1 {
+		return
+	}
 	b.conns[connId] = conn
 	b.mutex.Unlock()
 }
 
 func (b *WebsocketBenchmarker) Stop() {
-	b.closed = 1
+	if !atomic.CompareAndSwapInt64(&b.closed, 0, 1) {
+		return
+	}
 	b.mutex.Lock()
 	for _, conn := range b.conns {
-		_ = conn.Close()
+		if err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "closed")); err != nil {
+			log.Println("conn close err: " + err.Error())
+		}
 	}
 	b.mutex.Unlock()
 }
