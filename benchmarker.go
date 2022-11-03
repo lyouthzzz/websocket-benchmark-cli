@@ -175,7 +175,6 @@ func (b *WebsocketBenchmarker) addConn(connId int, conn *websocket.Conn) {
 		return
 	}
 	b.conns[connId] = conn
-	b.mutex.Unlock()
 }
 
 func (b *WebsocketBenchmarker) Stop() {
