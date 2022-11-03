@@ -72,7 +72,7 @@ func NewWebsocketBenchmarker(opts ...WebsocketBenchmarkerOption) *WebsocketBench
 		message:         "ping",
 		messageInterval: 30 * time.Second,
 		connectInterval: 10 * time.Millisecond,
-		dialer:          &websocket.Dialer{Proxy: http.ProxyFromEnvironment, HandshakeTimeout: 5 * time.Second},
+		dialer:          &websocket.Dialer{Proxy: http.ProxyFromEnvironment, HandshakeTimeout: 60 * time.Second},
 		conns:           make(map[int]*websocket.Conn),
 	}
 
