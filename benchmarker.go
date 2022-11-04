@@ -71,6 +71,7 @@ func NewWebsocketBenchmarker(opts ...WebsocketBenchmarkerOption) *WebsocketBench
 		message:         "ping",
 		messageInterval: 30 * time.Second,
 		connectInterval: 10 * time.Millisecond,
+		connectionSleep: 5 * time.Minute,
 		dialer:          &websocket.Dialer{Proxy: http.ProxyFromEnvironment, HandshakeTimeout: 60 * time.Second},
 		conns:           make(map[int]*websocket.Conn),
 	}
@@ -93,7 +94,26 @@ func (b *WebsocketBenchmarker) Test() error {
 }
 
 func (b *WebsocketBenchmarker) StartConnBenchmark() error {
-	return b.initConnection()
+	if err := b.initConnection(); err != nil {
+		return err
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(b.conns))
+
+	for connId := range b.conns {
+		//conn := conn
+		//connId := connId
+		go func() {
+			defer wg.Done()
+
+			time.Sleep(b.connectionSleep)
+
+			log.Printf("conn %d wake up \n", connId)
+		}()
+	}
+	wg.Wait()
+	return nil
 }
 
 func (b *WebsocketBenchmarker) initConnection() error {
