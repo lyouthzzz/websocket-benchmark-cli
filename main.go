@@ -18,7 +18,7 @@ func main() {
 
 	app.Name = "websocket-benchmark-cli"
 	app.Usage = "websocket benchmark tool"
-	app.Version = "v1.0.0"
+	app.Version = "v1.0.1"
 	app.Flags = GlobalFlags
 	app.Commands = []*cli.Command{
 		CmdConn,
