@@ -56,9 +56,11 @@ OPTIONS:
    --help, -h               show help (default: false)
 ```
 
+- sleep：连接保持时间
+
 #### example
 ```
-websocket-benchmark-cli conn --host localhost:8888 --connectInterval 30ms --user 10000
+websocket-benchmark-cli conn --host localhost:8888 --connectInterval 30ms --user 10000 --sleep 1h
 ```
 
 ## 消息吞吐压测
