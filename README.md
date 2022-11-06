@@ -3,6 +3,11 @@
 - 支持连接压测
 - 支持IO吞吐压测
 
+## install
+```bash
+go get github.com/lyouthzzz/websocket-benchmark-cli@main
+```
+
 ## websocket-benchmark-cli
 ```bash
 websocket-benchmark-cli -h
