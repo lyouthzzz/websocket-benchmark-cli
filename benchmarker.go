@@ -58,7 +58,7 @@ type WebsocketBenchmarker struct {
 
 	dialer *websocket.Dialer
 	conns  map[int]*websocket.Conn
-	mutex  sync.Mutex
+	mutex  sync.RWMutex
 
 	closed int64
 }
@@ -166,7 +166,12 @@ func (b *WebsocketBenchmarker) StartMessageBenchmark() error {
 		connId := connId
 
 		go func() {
-			defer wg.Done()
+			defer func() {
+				wg.Done()
+				b.closeConn(connId)
+				log.Printf("conn: %d, has closed\n", connId)
+			}()
+
 			times := b.messageTimes
 			curTimes := 0
 
@@ -182,6 +187,7 @@ func (b *WebsocketBenchmarker) StartMessageBenchmark() error {
 				case <-ticker.C:
 					if err := conn.WriteMessage(websocket.TextMessage, messageContent); err != nil {
 						log.Printf("conn: %d, write message err: %s \n", connId, err.Error())
+						return
 					}
 					curTimes++
 					if curTimes >= times {
@@ -203,11 +209,19 @@ func (b *WebsocketBenchmarker) connect() (*websocket.Conn, error) {
 }
 
 func (b *WebsocketBenchmarker) closeConn(connId int) {
+	b.mutex.RLock()
 	conn, ok := b.conns[connId]
 	if !ok {
+		b.mutex.RUnlock()
 		return
 	}
-	_ = conn.Close()
+	b.mutex.RUnlock()
+
+	_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "closed"))
+
+	b.mutex.Lock()
+	delete(b.conns, connId)
+	b.mutex.Unlock()
 }
 
 func (b *WebsocketBenchmarker) delConn(connId int) {
