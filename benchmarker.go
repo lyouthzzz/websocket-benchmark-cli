@@ -102,10 +102,12 @@ func (b *WebsocketBenchmarker) StartConnBenchmark() error {
 	wg.Add(len(b.conns))
 
 	for connId := range b.conns {
-		//conn := conn
-		//connId := connId
+		connId := connId
 		go func() {
-			defer wg.Done()
+			defer func() {
+				wg.Done()
+				b.closeConn(connId)
+			}()
 
 			time.Sleep(b.connectionSleep)
 
