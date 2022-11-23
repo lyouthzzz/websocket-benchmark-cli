@@ -10,6 +10,7 @@ var GlobalFlags = []cli.Flag{
 	&cli.StringFlag{Name: "path", Value: "/ws"},
 	&cli.IntFlag{Name: "user", Value: 500},
 	&cli.StringFlag{Name: "connectInterval", Value: "20ms"},
+	&cli.BoolFlag{Name: "verbose", Value: false},
 }
 
 func main() {

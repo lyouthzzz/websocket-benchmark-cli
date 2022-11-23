@@ -38,6 +38,7 @@ func CmdMessageAction(ctx *cli.Context) error {
 	path := ctx.String("path")
 	userNum := ctx.Int("user")
 	connectIntv := ctx.Duration("connectInterval")
+	verbose := ctx.Bool("verbose")
 
 	messageContent := ctx.String("content")
 	messageIntv := ctx.Duration("interval")
@@ -53,6 +54,7 @@ func CmdMessageAction(ctx *cli.Context) error {
 	}
 
 	benchmarker := NewWebsocketBenchmarker(
+		WebsocketBenchmarkerOptionVerbose(verbose),
 		WebsocketBenchmarkerOptionEndpoint(endpoint),
 		WebsocketBenchmarkerOptionPath(path),
 		WebsocketBenchmarkerOptionUserNum(userNum),

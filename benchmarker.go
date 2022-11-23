@@ -13,6 +13,10 @@ import (
 
 type WebsocketBenchmarkerOption func(*WebsocketBenchmarker)
 
+func WebsocketBenchmarkerOptionVerbose(v bool) WebsocketBenchmarkerOption {
+	return func(b *WebsocketBenchmarker) { b.verbose = v }
+}
+
 func WebsocketBenchmarkerOptionEndpoint(endpoint string) WebsocketBenchmarkerOption {
 	return func(b *WebsocketBenchmarker) { b.endpoint = endpoint }
 }
@@ -46,6 +50,8 @@ func WebsocketBenchmarkerOptionUserNum(userNum int) WebsocketBenchmarkerOption {
 }
 
 type WebsocketBenchmarker struct {
+	verbose bool
+
 	endpoint string
 	path     string
 
@@ -220,7 +226,7 @@ func (b *WebsocketBenchmarker) closeConn(connId int) {
 	b.mutex.RUnlock()
 
 	_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "closed"))
-
+	_ = conn.Close()
 	b.mutex.Lock()
 	delete(b.conns, connId)
 	b.mutex.Unlock()
